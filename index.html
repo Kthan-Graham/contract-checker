@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Contract Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <div class="container py-4" id="mainContainer">
+        <h1 class="text-center mb-4 fw-bold text-primary" style="letter-spacing:1px;">Company Contract Tracker</h1>
+        
+        <!-- Add Company Form -->
+        <div class="card mb-4 shadow-sm rounded-4 border-0">
+            <div class="card-header bg-gradient bg-primary text-white rounded-top-4 border-0">
+                <h3 class="mb-0">Add New Company</h3>
+            </div>
+            <div class="card-body bg-light rounded-bottom-4">
+                <form id="companyForm">
+                    <div class="mb-3">
+                        <label for="companyName" class="form-label fw-semibold text-primary">Company Name</label>
+                        <input type="text" class="form-control rounded-3" id="companyName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="contactPerson" class="form-label fw-semibold text-primary">Contact Person</label>
+                        <input type="text" class="form-control rounded-3" id="contactPerson">
+                    </div>
+                    <div class="mb-3">
+                        <label for="contactEmail" class="form-label fw-semibold text-primary">Contact Email</label>
+                        <input type="email" class="form-control rounded-3" id="contactEmail">
+                    </div>
+                    <div class="mb-3">
+                        <label for="contactPhone" class="form-label fw-semibold text-primary">Contact Phone</label>
+                        <input type="tel" class="form-control rounded-3" id="contactPhone">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 rounded-3">Add Company</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Company List -->
+        <div class="card shadow-sm rounded-4 border-0 mb-4">
+            <div class="card-header bg-gradient bg-primary text-white rounded-top-4 border-0">
+                <h3 class="mb-0">Companies</h3>
+            </div>
+            <div class="card-body bg-light rounded-bottom-4">
+                <div class="mb-3">
+                    <input type="text" class="form-control rounded-3" id="searchCompany" placeholder="Search companies...">
+                </div>
+                <div id="companiesList" class="row"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Milestone Notes Modal -->
+    <div class="modal fade" id="notesModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content rounded-4 shadow">
+                <div class="modal-header bg-primary text-white rounded-top-4">
+                    <h5 class="modal-title">Notes for <span id="milestoneName"></span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body bg-light">
+                    <div id="existingNotes"></div>
+                    <textarea class="form-control mt-3 rounded-3" id="newNote" rows="3" placeholder="Add a new note..."></textarea>
+                </div>
+                <div class="modal-footer bg-light rounded-bottom-4">
+                    <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary rounded-3" id="saveNote">Save Note</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+        // import { initDB, loadCompanies, saveCompanies } from './src/db.js';
+
+        // Database setup (using electron-store)
+        // await initDB();
+
+        let currentSearchTerm = ''; // Track the current search term
+        
+        // Track minimized state for each company
+        const minimizedMilestones = {};
+        let minimizedCompanies = {};
+
+       
+        // Load milestones for a company
+        async function loadMilestones(companyId) {
+            const companies = await window.electronAPI.getCompanies();
+            const company = companies.find(c => c.id === companyId);
+            const milestonesContainer = document.getElementById(`milestones-${companyId}`);
+            
+            // Always initialize milestones if missing or empty
+            if (!company.milestones || company.milestones.length === 0) {
+                company.milestones = [
+                    { id: 1, name: 'Contract Signed', completed: false },
+                    { id: 2, name: 'Inspection Completed', completed: false },
+                    { id: 3, name: 'Quote Approved', completed: false },
+                    { id: 4, name: 'Funds Received', completed: false },
+                    { id: 5, name: 'Repairs Completed', completed: false },
+                    { id: 6, name: 'Cleaning Completed', completed: false },
+                    { id: 7, name: 'Quality Control Completed', completed: false },
+                    { id: 8, name: 'Photos/3D Completed', completed: false },
+                    { id: 9, name: 'Listing Live', completed: false },
+                    { id: 10, name: 'Pending Application', completed: false },
+                    { id: 11, name: '10% of Rental Comp Reached', completed: false },
+                    { id: 12, name: 'Tenant Secured', completed: false }
+                ];
+                await window.electronAPI.saveCompanies(companies);
+            }
+
+            milestonesContainer.innerHTML = '';
+            
+            company.milestones.forEach(milestone => {
+                const milestoneCard = document.createElement('div');
+                milestoneCard.className = `col-md-6 mb-3 milestone-card ${milestone.completed ? 'completed' : ''}`;
+                milestoneCard.innerHTML = `
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="form-check">
+                                <input class="form-check-input milestone-checkbox" type="checkbox" 
+                                    id="milestone-${companyId}-${milestone.id}" 
+                                    ${milestone.completed ? 'checked' : ''}
+                                    data-company-id="${companyId}"
+                                    data-milestone-id="${milestone.id}">
+                                <label class="form-check-label" for="milestone-${companyId}-${milestone.id}">
+                                    <strong>${milestone.name}</strong>
+                                </label>
+                                ${milestone.completed ? 
+                                    `<small class="text-muted d-block">Completed: ${milestone.completedAt ? new Date(milestone.completedAt).toLocaleString() : ''}</small>` : ''}
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary mt-2 view-notes-btn"
+                                data-company-id="${companyId}"
+                                data-milestone-id="${milestone.id}"
+                                data-milestone-name="${milestone.name}">
+                                ${milestone.notes && milestone.notes.length > 0 ? 
+                                    `${milestone.notes.length} note(s)` : 'Add note'}
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary mt-2 send-email-btn"
+                                data-company-id="${companyId}"
+                                data-milestone-id="${milestone.id}"
+                                data-milestone-name="${milestone.name}">
+                                Email
+                            </button>
+                        </div>
+                    </div>
+                `;
+                milestonesContainer.appendChild(milestoneCard);
+            });
+
+            // Add event listeners to checkboxes
+            document.querySelectorAll(`.milestone-checkbox[data-company-id="${companyId}"]`).forEach(checkbox => {
+                checkbox.addEventListener('change', toggleMilestone);
+            });
+
+            // Add event listeners to notes buttons
+            document.querySelectorAll(`.view-notes-btn[data-company-id="${companyId}"]`).forEach(button => {
+                button.addEventListener('click', viewNotes);
+            });
+
+            // Add event listeners to email buttons
+            document.querySelectorAll(`.send-email-btn[data-company-id="${companyId}"]`).forEach(button => {
+                button.addEventListener('click', sendMilestoneEmail);
+            });
+        }
+
+        // Toggle milestone completion status
+        async function toggleMilestone(e) {
+            const checkbox = e.target;
+            const companyId = parseInt(checkbox.dataset.companyId);
+            const milestoneId = parseInt(checkbox.dataset.milestoneId);
+
+            const companies = await window.electronAPI.getCompanies();
+            const company = companies.find(c => c.id === companyId);
+            const milestone = company.milestones.find(m => m.id === milestoneId);
+
+            milestone.completed = checkbox.checked;
+            milestone.completedAt = milestone.completed ? new Date().toISOString() : null;
+
+            await window.electronAPI.saveCompanies(companies);
+            // Only reload milestones for this company, not all companies
+            loadMilestones(companyId);
+        }
+
+        // View notes for a milestone
+        async function viewNotes(e) {
+            const button = e.target;
+            const companyId = parseInt(button.dataset.companyId);
+            const milestoneId = parseInt(button.dataset.milestoneId);
+            const milestoneName = button.dataset.milestoneName;
+
+            const companies = await window.electronAPI.getCompanies();
+            const company = companies.find(c => c.id === companyId);
+            const milestone = company.milestones.find(m => m.id === milestoneId);
+
+            document.getElementById('milestoneName').textContent = milestoneName;
+
+            const existingNotes = document.getElementById('existingNotes');
+            existingNotes.innerHTML = '';
+
+            if (milestone.notes && milestone.notes.length > 0) {
+                milestone.notes.forEach((note, idx) => {
+                    const noteDiv = document.createElement('div');
+                    noteDiv.className = 'mb-3 p-3 bg-light rounded d-flex justify-content-between align-items-center';
+                    noteDiv.innerHTML = `
+                        <div>
+                            <p class="mb-1">${note.text}</p>
+                            <small class="text-muted">${new Date(note.timestamp).toLocaleString()}</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger delete-note-btn" data-note-idx="${idx}">Delete</button>
+                    `;
+                    existingNotes.appendChild(noteDiv);
+
+                    // Add delete event
+                    noteDiv.querySelector('.delete-note-btn').addEventListener('click', async function() {
+                        milestone.notes.splice(idx, 1);
+                        await window.electronAPI.saveCompanies(companies);
+
+                        // Remove the noteDiv from the DOM
+                        noteDiv.remove();
+
+                        // Optionally, update the note count on the button if needed
+                        button.innerHTML = `${milestone.notes.length} note(s)`;
+                    });
+                });
+            } else {
+                existingNotes.innerHTML = '<p>No notes yet.</p>';
+            }
+
+            const saveButton = document.getElementById('saveNote');
+            saveButton.onclick = async function() {
+                const newNoteText = document.getElementById('newNote').value.trim();
+                if (newNoteText) {
+                    if (!milestone.notes) {
+                        milestone.notes = [];
+                    }
+                    milestone.notes.push({
+                        text: newNoteText,
+                        timestamp: new Date().toISOString()
+                    });
+                    await window.electronAPI.saveCompanies(companies);
+                    document.getElementById('newNote').value = '';
+
+                    // Update notes list directly
+                    const noteDiv = document.createElement('div');
+                    noteDiv.className = 'mb-3 p-3 bg-light rounded';
+                    noteDiv.innerHTML = `
+                        <p>${newNoteText}</p>
+                        <small class="text-muted">${new Date().toLocaleString()}</small>
+                    `;
+                    existingNotes.appendChild(noteDiv);
+
+                    // Update note count on milestone button
+                    button.innerHTML = `${milestone.notes.length} note(s)`;
+
+                    // Close modal after saving
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('notesModal'));
+                    modal.hide();
+                }
+            };
+
+            const modal = new bootstrap.Modal(document.getElementById('notesModal'));
+            modal.show();
+        }
+
+        // Add a new company
+        document.getElementById('companyForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const companies = await window.electronAPI.getCompanies();
+            console.log('Loaded companies:', companies); // <-- Debug log
+
+            const defaultMilestones = [
+                { id: 1, name: 'Contract Signed', completed: false },
+                { id: 2, name: 'Inspection Completed', completed: false },
+                { id: 3, name: 'Quote Approved', completed: false },
+                { id: 4, name: 'Funds Received', completed: false },
+                { id: 5, name: 'Repairs Completed', completed: false },
+                { id: 6, name: 'Cleaning Completed', completed: false },
+                { id: 7, name: 'Quality Control Completed', completed: false },
+                { id: 8, name: 'Photos/3D Completed', completed: false },
+                { id: 9, name: 'Listing Live', completed: false },
+                { id: 10, name: 'Pending Application', completed: false },
+                { id: 11, name: '10% of Rental Comp Reached', completed: false },
+                { id: 12, name: 'Tenant Secured', completed: false }
+            ];
+
+            const newCompany = {
+                id: companies.length > 0 ? Math.max(...companies.map(c => c.id || 0)) + 1 : 1,
+                name: document.getElementById('companyName').value,
+                contactPerson: document.getElementById('contactPerson').value.trim() || null,
+                contactEmail: document.getElementById('contactEmail').value.trim() || null,
+                contactPhone: document.getElementById('contactPhone').value.trim() || null,
+                createdAt: new Date().toISOString(),
+                milestones: defaultMilestones.map(m => ({ ...m })) // <-- Always initialize milestones!
+            };
+            console.log('New company:', newCompany); // <-- Debug log
+
+            companies.push(newCompany);
+            await window.electronAPI.saveCompanies(companies);
+
+            this.reset();
+            document.getElementById('searchCompany').value = "";
+            renderCompanies('');
+        });
+
+        // Search companies
+        document.getElementById('searchCompany').addEventListener('input', function(e) {
+            const term = e.target.value;
+            renderCompanies(term);
+        });
+
+        // Fix modal closing issue by resetting note textarea and notes list when modal is hidden
+        document.getElementById('notesModal').addEventListener('hidden.bs.modal', function () {
+            document.getElementById('existingNotes').innerHTML = '';
+            document.getElementById('newNote').value = '';
+        });
+
+        // Add this function to handle sending the email
+        async function sendMilestoneEmail(e) {
+            const button = e.target;
+            const companyId = parseInt(button.dataset.companyId);
+            const milestoneId = parseInt(button.dataset.milestoneId);
+            const milestoneName = button.dataset.milestoneName;
+
+            const companies = await window.electronAPI.getCompanies();
+            const company = companies.find(c => c.id === companyId);
+
+            // Prepare email details
+            const subject = `Milestone Reached: ${milestoneName}`;
+            const body = 
+                `Hello${company.contactPerson ? ' ' + company.contactPerson : ''},\n\n` +
+                `The milestone "${milestoneName}" has been reached for ${company.name}.\n\n` +
+                `Best regards,\n10 stars property management`;
+            const email = company.contactEmail || '';
+
+            // Open default mail client
+            window.electronAPI.openEmailClient(email, subject, encodeURIComponent(body));
+        }
+
+
+        async function renderCompanies(searchTerm) {
+            // If searchTerm is undefined, use the current value of the search box
+            if (typeof searchTerm === 'undefined') {
+                searchTerm = document.getElementById('searchCompany').value || '';
+            }
+            console.log('renderCompanies called with:', `"${searchTerm}"`);
+            const companies = await window.electronAPI.getCompanies();
+            const list = document.getElementById('companiesList');
+            list.innerHTML = '';
+
+            companies
+                .filter(c => {
+                    const term = (searchTerm || '').trim().toLowerCase();
+                    return term === '' || (c.name && c.name.toLowerCase().includes(term));
+                })
+                .forEach(company => {
+                    const isMinimized = minimizedCompanies[company.id];
+
+                    const card = document.createElement('div');
+                    card.className = 'card mb-4 col-12 border-0 shadow-sm company-card';
+
+                    // Modern header with gradient and icon
+                    card.innerHTML = `
+                        <div class="card-header d-flex justify-content-between align-items-center bg-white border-bottom-0 rounded-top-4" style="background: linear-gradient(90deg, #e3f2fd 0%, #fff 100%);">
+                            <div>
+                                <h5 class="mb-0 fw-bold text-primary">${company.name}</h5>
+                                <small class="text-muted">${company.contactPerson ? `(${company.contactPerson})` : ''}</small>
+                            </div>
+                            <div>
+                                <button class="btn btn-sm btn-outline-primary minimize-btn me-2" data-company-id="${company.id}">
+                                    <i class="bi ${isMinimized ? 'bi-chevron-down' : 'bi-chevron-up'}"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-company-btn" data-company-id="${company.id}">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body px-4 py-3 bg-light rounded-bottom-4" style="${isMinimized ? 'display:none;' : ''}">
+                            <div class="row mb-2">
+                                <div class="col-md-6"><span class="fw-semibold text-secondary">Email:</span> ${company.contactEmail || '<span class="text-muted">N/A</span>'}</div>
+                                <div class="col-md-6"><span class="fw-semibold text-secondary">Phone:</span> ${company.contactPhone || '<span class="text-muted">N/A</span>'}</div>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-info mb-3">Milestones</h6>
+                                <ul class="list-group list-group-flush" id="milestones-${company.id}"></ul>
+                            </div>
+                        </div>
+                    `;
+
+                    // Add milestones checklist
+                    const milestonesList = card.querySelector(`#milestones-${company.id}`);
+                    const milestones = company.milestones && company.milestones.length > 0
+                        ? company.milestones
+                        : [
+                            { id: 1, name: 'Contract Signed', completed: false },
+                            { id: 2, name: 'Inspection Completed', completed: false },
+                            { id: 3, name: 'Quote Approved', completed: false },
+                            { id: 4, name: 'Funds Received', completed: false },
+                            { id: 5, name: 'Repairs Completed', completed: false },
+                            { id: 6, name: 'Cleaning Completed', completed: false },
+                            { id: 7, name: 'Quality Control Completed', completed: false },
+                            { id: 8, name: 'Photos/3D Completed', completed: false },
+                            { id: 9, name: 'Listing Live', completed: false },
+                            { id: 10, name: 'Pending Application', completed: false },
+                            { id: 11, name: '10% of Rental Comp Reached', completed: false },
+                            { id: 12, name: 'Tenant Secured', completed: false }
+                        ];
+
+                    milestones.forEach(milestone => {
+    const milestoneItem = document.createElement('li');
+    milestoneItem.className = 'list-group-item d-flex align-items-center justify-content-between bg-white border-0 rounded-3 mb-2 shadow-sm';
+    milestoneItem.innerHTML = `
+        <div>
+            <input type="checkbox" class="form-check-input me-2" ${milestone.completed ? 'checked' : ''} data-company-id="${company.id}" data-milestone-id="${milestone.id}">
+            <span class="fw-semibold ${milestone.completed ? 'text-success' : 'text-dark'}">${milestone.name}</span>
+        </div>
+        <div>
+            <button class="btn btn-sm btn-outline-secondary view-notes-btn me-2"
+                data-company-id="${company.id}"
+                data-milestone-id="${milestone.id}"
+                data-milestone-name="${milestone.name}">
+                <i class="bi bi-journal-text"></i> ${milestone.notes && milestone.notes.length > 0 ? `${milestone.notes.length} note(s)` : 'Add note'}
+            </button>
+            <button class="btn btn-sm btn-outline-info send-email-btn"
+                data-company-id="${company.id}"
+                data-milestone-id="${milestone.id}"
+                data-milestone-name="${milestone.name}">
+                <i class="bi bi-envelope"></i> Email
+            </button>
+        </div>
+    `;
+    milestonesList.appendChild(milestoneItem);
+
+    // Checkbox event
+    milestoneItem.querySelector('input[type="checkbox"]').addEventListener('change', async function(e) {
+        const companyId = company.id;
+        const milestoneId = milestone.id;
+        const companiesData = await window.electronAPI.getCompanies();
+        const companyData = companiesData.find(c => c.id === companyId);
+        const milestoneData = companyData.milestones.find(m => m.id === milestoneId);
+
+        milestoneData.completed = e.target.checked;
+        await window.electronAPI.saveCompanies(companiesData);
+        renderCompanies(searchTerm);
+    });
+
+    // Notes button event
+    milestoneItem.querySelector('.view-notes-btn').addEventListener('click', viewNotes);
+    
+    // Email button event - ADD THIS RIGHT HERE
+    milestoneItem.querySelector('.send-email-btn').addEventListener('click', sendMilestoneEmail);
+});
+
+                    list.appendChild(card);
+
+                    // Minimize button event
+                    card.querySelector('.minimize-btn').addEventListener('click', function() {
+                        minimizedCompanies[company.id] = !minimizedCompanies[company.id];
+                        renderCompanies(searchTerm);
+                    });
+
+                    // Delete button event
+                    card.querySelector('.delete-company-btn').addEventListener('click', async function() {
+                        if (confirm(`Are you sure you want to delete "${company.name}"? This action cannot be undone.`)) {
+        const companiesData = await window.electronAPI.getCompanies();
+        const updatedCompanies = companiesData.filter(c => c.id !== company.id);
+        await window.electronAPI.saveCompanies(updatedCompanies);
+        document.getElementById('searchCompany').value = "";
+        renderCompanies('');
+    }
+});
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('searchCompany').value = "";
+            minimizedCompanies = {};
+            console.log('DOMContentLoaded fired!');
+            const companies = await window.electronAPI.getCompanies();
+            companies.forEach(company => {
+                minimizedCompanies[company.id] = true; // Show details by default
+            });
+            await renderCompanies(''); // <-- Show all companies!
+        });
+
+        console.log('Script loaded!');
+    </script>
+</body>
+</html>

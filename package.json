@@ -1,0 +1,22 @@
+{
+  "name": "company-contract-tracker",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.Kthan.contracttracker",
+    "files": [
+      "**/*",
+      "companies.json"
+    ],
+    "extraResources": [
+      "companies.json"
+    ],
+    "win": {
+      "target": "nsis"
+    }
+  }
+}

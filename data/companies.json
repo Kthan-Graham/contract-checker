@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "name": "test",
+    "contactPerson": "test",
+    "contactEmail": "test@test",
+    "contactPhone": "1231231234",
+    "createdAt": "2025-07-26T17:59:58.038Z",
+    "milestones": [
+      {
+        "id": 1,
+        "name": "Contract Signed",
+        "completed": true
+      },
+      {
+        "id": 2,
+        "name": "Inspection Completed",
+        "completed": true
+      },
+      {
+        "id": 3,
+        "name": "Quote Approved",
+        "completed": true
+      },
+      {
+        "id": 4,
+        "name": "Funds Received",
+        "completed": true
+      },
+      {
+        "id": 5,
+        "name": "Repairs Completed",
+        "completed": true
+      },
+      {
+        "id": 6,
+        "name": "Cleaning Completed",
+        "completed": true
+      },
+      {
+        "id": 7,
+        "name": "Quality Control Completed",
+        "completed": false
+      },
+      {
+        "id": 8,
+        "name": "Photos/3D Completed",
+        "completed": false
+      },
+      {
+        "id": 9,
+        "name": "Listing Live",
+        "completed": false
+      },
+      {
+        "id": 10,
+        "name": "Pending Application",
+        "completed": false
+      },
+      {
+        "id": 11,
+        "name": "10% of Rental Comp Reached",
+        "completed": false
+      },
+      {
+        "id": 12,
+        "name": "Tenant Secured",
+        "completed": false
+      }
+    ]
+  }
+]
