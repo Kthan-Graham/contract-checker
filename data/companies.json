@@ -1,0 +1,68 @@
+[
+  {
+    "id": 1,
+    "createdDate": "2025-07-27",
+    "address": "123 Test Street, Test City",
+    "contactName": "John Doe",
+    "contactEmail": "john@example.com",
+    "milestones": [
+      {
+        "id": 1,
+        "name": "Keys",
+        "completed": false,
+        "completedDate": null,
+        "notes": [],
+        "tags": []
+      },
+      {
+        "id": 2,
+        "name": "Power",
+        "completed": true,
+        "completedDate": "2025-07-27",
+        "notes": [],
+        "tags": []
+      },
+      {
+        "id": 3,
+        "name": "Water",
+        "completed": false,
+        "completedDate": null,
+        "notes": [],
+        "tags": []
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "createdDate": "2025-07-26",
+    "address": "456 Sample Avenue, Demo Town",
+    "contactName": "Jane Smith",
+    "contactEmail": "jane@example.com",
+    "milestones": [
+      {
+        "id": 1,
+        "name": "Keys",
+        "completed": true,
+        "completedDate": "2025-07-26",
+        "notes": [],
+        "tags": []
+      },
+      {
+        "id": 2,
+        "name": "Power",
+        "completed": true,
+        "completedDate": "2025-07-26",
+        "notes": [],
+        "tags": []
+      },
+      {
+        "id": 3,
+        "name": "Water",
+        "completed": false,
+        "completedDate": null,
+        "notes": [],
+        "tags": []
+      }
+    ]
+  }
+]
